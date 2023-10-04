@@ -11,7 +11,9 @@ const {
   commonBeforeEach,
   commonAfterEach,
   commonAfterAll,
+  testJobIds,
   u1Token,
+  u2Token,
   adminToken,
 } = require("./_testCommon");
 
@@ -320,5 +322,48 @@ describe("DELETE /users/:username", function () {
       .delete(`/users/nope`)
       .set("authorization", `Bearer ${adminToken}`);
     expect(resp.statusCode).toEqual(404);
+  });
+});
+
+//test user job application POST /users/:username/jobs/:id
+describe("POST POST /users/:username/jobs/:id ", function () {
+  test("user can apply to a job", async function () {
+    const resp = await request(app)
+      .post(`/users/u1/jobs/${testJobIds[0]}`)
+      .set("authorization", `Bearer ${u1Token}`);
+    expect(resp.body).toEqual({ applied: testJobIds[0] });
+  });
+
+  test("admin can apply for a user", async function () {
+    const resp = await request(app)
+      .post(`/users/u1/jobs/${testJobIds[1]}`)
+      .set("authorization", `Bearer ${adminToken}`);
+    expect(resp.body).toEqual({ applied: testJobIds[1] });
+  });
+
+  test("unauth for anon", async function () {
+    const resp = await request(app).post(`/users/u1/jobs/${testJobIds[0]}`);
+    expect(resp.statusCode).toBe(401);
+  });
+
+  test("invalid job id", async function () {
+    const resp = await request(app)
+      .post(`/users/u1/jobs/14`)
+      .set("authorization", `Bearer ${u1Token}`);
+    expect(resp.statusCode).toBe(404);
+  });
+
+  test("user name not found", async function () {
+    const resp = await request(app)
+      .post(`/users/invalid/jobs/14`)
+      .set("authorization", `Bearer ${adminToken}`);
+    expect(resp.statusCode).toBe(404);
+  });
+
+  test("unauthorized for some other user", async function () {
+    const resp = await request(app)
+      .post(`/users/u1/jobs/${testJobIds[1]}`)
+      .set("authorization", `Bearer ${u2Token}`);
+    expect(resp.statusCode).toBe(401);
   });
 });

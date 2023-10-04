@@ -5,11 +5,7 @@
 const jsonschema = require("jsonschema");
 
 const express = require("express");
-const {
-  ensureLoggedIn,
-  ensureAdmin,
-  ensureAdminOrUser,
-} = require("../middleware/auth");
+const { ensureAdmin, ensureAdminOrUser } = require("../middleware/auth");
 const { BadRequestError } = require("../expressError");
 const User = require("../models/user");
 const { createToken } = require("../helpers/tokens");
@@ -78,6 +74,24 @@ router.get("/:username", ensureAdminOrUser, async function (req, res, next) {
   }
 });
 
+//Apply to jobs by user or an admin
+router.post(
+  "/:username/jobs/:id",
+  ensureAdminOrUser,
+  async function (req, res, next) {
+    try {
+      // const job_id = +req.params.id;
+      // const username = req.params.username;
+      // await User.apply(username, job_id);
+
+      const job_id = +req.params.id;
+      await User.applyToJobs(req.params.username, job_id);
+      return res.json({ applied: job_id });
+    } catch (err) {
+      return next(err);
+    }
+  }
+);
 /** PATCH /[username] { user } => { user }
  *
  * Data can include:

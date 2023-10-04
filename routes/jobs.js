@@ -10,10 +10,14 @@ const Job = require("../models/job");
 
 const router = new express.Router();
 
+//Get all jobs. Jobs can only be searched using title, equity and minSalary
+//Example job/?minSalary=85000
+
 router.get("/", async function (req, res, next) {
   try {
     const filters = req.query;
-    console.log(filters);
+    if (filters.minSalary !== undefined) filters.minSalary = +filters.minSalary;
+    filters.equity = filters.equity === "true";
     const jobs = await Job.getAll(filters);
     return res.json({ jobs });
   } catch (e) {
@@ -21,12 +25,11 @@ router.get("/", async function (req, res, next) {
   }
 });
 
-//create a new job
+//create a new job. Input should be {title, salary, equity, company_handle}
 
 router.post("/", ensureAdmin, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, jobNewSchema);
-    console.log(validator);
     if (!validator.valid) {
       const errs = validator.errors.map((e) => e.stack);
       throw new BadRequestError(errs);
@@ -38,11 +41,11 @@ router.post("/", ensureAdmin, async function (req, res, next) {
   }
 });
 
-//Get specific job information using job id
+//Get a specific job information using job id /jobs/<job id>
 
 router.get("/:id", async function (req, res, next) {
   try {
-    const job = await Job.get(req.parms.id);
+    const job = await Job.get(req.params.id);
     return res.json({ job });
   } catch (e) {
     return next(e);
@@ -75,10 +78,12 @@ router.patch("/:id", ensureAdmin, async function (req, res, next) {
   }
 });
 
+//Delete a job using job id.
+
 router.delete("/:id", ensureAdmin, async function (req, res, next) {
   try {
     await Job.remove(req.params.id);
-    return res.json({ deleted: req.params.id });
+    return res.json({ deleted: +req.params.id });
   } catch (err) {
     return next(err);
   }
